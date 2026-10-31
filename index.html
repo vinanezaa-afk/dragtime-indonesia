@@ -204,6 +204,300 @@ function resetRun(){
  document.getElementById('gpsStatus').textContent='GPS belum diaktifkan.';
 }
 document.getElementById('target').addEventListener('change',resetRun);
+<\script>
+<select id="target" style="width:100%;margin-top:10px">
+  <option value="100">100 Meter</option>
+  <option value="200">200 Meter</option>
+  <option value="300">300 Meter</option>
+  <option value="400">400 Meter</option>
+  <option value="500" selected>500 Meter</option>
+<script>
+let mode = "manual";
+let watch = null;
+let started = false;
+let finished = false;
+
+let total = 0;
+let anchor = null;
+let startTime = 0;
+let elapsed = 0;
+let timer = null;
+
+let map = L.map('map').setView([-6.9, 109.7], 13);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap'
+}).addTo(map);
+
+let marker = null;
+let line = L.polyline([], {
+  color: '#159cff',
+  weight: 5
+}).addTo(map);
+
+function setMode(m) {
+  if (started || watch !== null) return;
+
+  mode = m;
+
+  document.getElementById('manual').classList.toggle('active', m === 'manual');
+  document.getElementById('auto').classList.toggle('active', m === 'auto');
+
+  document.getElementById('modeInfo').textContent =
+    m === 'manual'
+      ? 'Pengukuran dimulai setelah GPS mendapatkan posisi akurat.'
+      : 'Pengukuran dimulai saat motor mulai bergerak.';
+}
+
+function distanceBetween(a, b) {
+  const R = 6371000;
+  const rad = x => x * Math.PI / 180;
+
+  const dLat = rad(b.lat - a.lat);
+  const dLon = rad(b.lng - a.lng);
+
+  const x =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(rad(a.lat)) *
+    Math.cos(rad(b.lat)) *
+    Math.sin(dLon / 2) ** 2;
+
+  return 2 * R * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
+}
+
+function showTime() {
+  elapsed = performance.now() - startTime;
+
+  document.getElementById('time').textContent =
+    (elapsed / 1000).toFixed(3);
+}
+
+function begin(point, accuracy) {
+  if (started || finished) return;
+
+  started = true;
+  total = 0;
+
+  anchor = {
+    lat: point.lat,
+    lng: point.lng,
+    accuracy: accuracy,
+    timestamp: point.timestamp
+  };
+
+  startTime = performance.now();
+
+  timer = setInterval(showTime, 20);
+
+  document.getElementById('result').textContent = 'JALAN';
+  document.getElementById('start').textContent = 'SEDANG MENGUKUR';
+
+  updateDisplay();
+}
+
+function startRun() {
+  if (!navigator.geolocation) {
+    alert('Browser tidak mendukung GPS.');
+    return;
+  }
+
+  if (started || watch !== null) return;
+
+  if (watch !== null) {
+    navigator.geolocation.clearWatch(watch);
+  }
+
+  document.getElementById('gpsStatus').textContent =
+    'Mencari GPS yang akurat...';
+
+  watch = navigator.geolocation.watchPosition(position => {
+
+    const p = position.coords;
+    const point = {
+      lat: p.latitude,
+      lng: p.longitude,
+      timestamp: position.timestamp
+    };
+
+    const accuracy = p.accuracy;
+
+    document.getElementById('gpsStatus').textContent =
+      'GPS aktif • Akurasi ' + Math.round(accuracy) + ' meter';
+
+    document.getElementById('speed').textContent =
+      p.speed === null ? '--' : (p.speed * 3.6).toFixed(1);
+
+    if (marker) {
+      marker.setLatLng([point.lat, point.lng]);
+    } else {
+      marker = L.marker([point.lat, point.lng]).addTo(map);
+    }
+
+    map.setView([point.lat, point.lng], 17);
+
+    document.getElementById('mapLink').href =
+      'https://www.google.com/maps?q=' +
+      point.lat + ',' + point.lng;
+
+    // Jangan gunakan titik GPS yang terlalu tidak akurat.
+    if (accuracy > 15) {
+      document.getElementById('gpsStatus').textContent =
+        'GPS belum cukup akurat. Tunggu sinyal lebih baik.';
+      return;
+    }
+
+    // Mode otomatis mulai ketika kendaraan bergerak.
+    if (mode === 'auto' && !started && !finished) {
+      if (p.speed !== null && p.speed > 1.5) {
+        begin(point, accuracy);
+      }
+      return;
+    }
+
+    // Mode manual dimulai setelah posisi GPS valid.
+    if (mode === 'manual' && !started && !finished) {
+      begin(point, accuracy);
+      return;
+    }
+
+    if (!started || finished || !anchor) return;
+
+    const d = distanceBetween(anchor, point);
+
+    const dt = Math.max(
+      0.1,
+      (point.timestamp - anchor.timestamp) / 1000
+    );
+
+    // Deteksi lonjakan GPS yang tidak masuk akal.
+    if (d > Math.max(25, dt * 80 + accuracy + anchor.accuracy)) {
+      anchor = {
+        ...point,
+        accuracy: accuracy
+      };
+      return;
+    }
+
+    // Saring pergeseran kecil akibat GPS.
+    const minStep = Math.max(
+      1.2,
+      Math.min(3.5, (accuracy + anchor.accuracy) * 0.15)
+    );
+
+    if (d >= minStep) {
+      total += d;
+
+      line.addLatLng([point.lat, point.lng]);
+
+      anchor = {
+        ...point,
+        accuracy: accuracy
+      };
+
+      updateDisplay();
+    }
+
+    if (total >= Number(document.getElementById('target').value)) {
+      finishRun();
+    }
+
+  }, error => {
+
+    document.getElementById('gpsStatus').textContent =
+      'GPS error: ' + error.message;
+
+    if (!started && watch !== null) {
+      navigator.geolocation.clearWatch(watch);
+      watch = null;
+    }
+
+  }, {
+    enableHighAccuracy: true,
+    maximumAge: 0,
+    timeout: 20000
+  });
+}
+
+function updateDisplay() {
+  const target = Number(document.getElementById('target').value);
+
+  document.getElementById('distance').textContent =
+    total.toFixed(1) + ' m';
+
+  document.getElementById('bar').style.width =
+    Math.min(100, total / target * 100) + '%';
+
+  document.getElementById('progressText').textContent =
+    total.toFixed(1) + ' / ' + target + ' meter';
+}
+
+function finishRun() {
+  if (!started || finished) return;
+
+  showTime();
+
+  finished = true;
+  started = false;
+
+  clearInterval(timer);
+  timer = null;
+
+  if (watch !== null) {
+    navigator.geolocation.clearWatch(watch);
+    watch = null;
+  }
+
+  document.getElementById('result').textContent = 'SELESAI';
+  document.getElementById('start').textContent = 'MULAI LAGI';
+
+  document.getElementById('gpsStatus').textContent =
+    'Pengukuran selesai • ' +
+    total.toFixed(1) + ' meter • ' +
+    (elapsed / 1000).toFixed(3) + ' detik';
+}
+
+function resetRun() {
+  if (watch !== null) {
+    navigator.geolocation.clearWatch(watch);
+  }
+
+  clearInterval(timer);
+
+  watch = null;
+  timer = null;
+
+  started = false;
+  finished = false;
+
+  total = 0;
+  anchor = null;
+  elapsed = 0;
+
+  line.setLatLngs([]);
+
+  if (marker) {
+    map.removeLayer(marker);
+    marker = null;
+  }
+
+  document.getElementById('distance').textContent = '0.0 m';
+  document.getElementById('time').textContent = '00.000';
+  document.getElementById('speed').textContent = '0';
+  document.getElementById('result').textContent = 'SIAP';
+
+  document.getElementById('bar').style.width = '0%';
+
+  document.getElementById('progressText').textContent =
+    '0 / ' + document.getElementById('target').value + ' meter';
+
+  document.getElementById('start').textContent =
+    'MULAI PENGUKURAN';
+
+  document.getElementById('gpsStatus').textContent =
+    'GPS belum diaktifkan.';
+}
+
+document.getElementById('target').addEventListener('change', resetRun);
 </script>
 </body>
 </html>
