@@ -241,7 +241,29 @@ try{
 records=JSON.parse(localStorage.getItem("dti_history")||"[]");
 }catch(e){records=[];}
 
-let map=L.map("map").setView([-6.9,109.7],13);
+
+const leafletReady = typeof L !== "undefined";
+
+let map = leafletReady
+  ? L.map("map").setView([-6.9,109.7],13)
+  : {
+      setView(){},
+      invalidateSize(){}
+    };
+
+if (leafletReady) {
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    attribution: "© OpenStreetMap"
+  }).addTo(map);
+}
+
+let track = leafletReady
+  ? L.polyline([], {color:"#00c8ee",weight:5}).addTo(map)
+  : {
+      setLatLngs(){},
+      addLatLng(){}
+    };
+
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
 attribution:"© OpenStreetMap"
@@ -304,8 +326,11 @@ top=Math.max(top,speed);
 $("topSpeed").textContent=top.toFixed(1);
 $("topHome").textContent=top.toFixed(1);
 
-if(marker)marker.setLatLng([p.lat,p.lng]);
-else marker=L.marker([p.lat,p.lng]).addTo(map);
+if (leafletReady) {
+  if(marker) marker.setLatLng([p.lat,p.lng]);
+  else marker=L.marker([p.lat,p.lng]).addTo(map);
+}
+
 
 if(follow)map.setView([p.lat,p.lng],17);
 
