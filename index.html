@@ -271,13 +271,36 @@ attribution:"© OpenStreetMap"
 
 let track=L.polyline([],{color:"#00c8ee",weight:5}).addTo(map);
 
+
 function page(name,button){
-document.querySelectorAll(".section").forEach(x=>x.classList.remove("show"));
-$(name).classList.add("show");
-document.querySelectorAll(".nav button").forEach(x=>x.classList.remove("active"));
-if(button)button.classList.add("active");
-setTimeout(()=>map.invalidateSize(),200);
+  const section = $(name);
+  if(!section) return;
+
+  document.querySelectorAll(".section").forEach(x=>{
+    x.classList.remove("show");
+  });
+
+  section.classList.add("show");
+
+  document.querySelectorAll(".nav button").forEach(x=>{
+    x.classList.remove("active");
+  });
+
+  if(button){
+    button.classList.add("active");
+  } else {
+    const navButton = document.querySelector(
+      `.nav button[onclick*="page('${name}'"]`
+    );
+    if(navButton) navButton.classList.add("active");
+  }
+
+  if(map && typeof map.invalidateSize === "function"){
+    setTimeout(()=>map.invalidateSize(),200);
+  }
 }
+
+
 
 function setMode(m){
 if(active)return;
@@ -299,7 +322,85 @@ Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;
 return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
 }
 
-function gpsStart(){
+
+
+function dragStart(){
+  if(active || finished) return;
+
+  if(!gpsPoint){
+    alert("Aktifkan GPS dan tunggu lokasi ditemukan.");
+    gpsStart();
+    return;
+  }
+
+  if(!navigator.geolocation || watch === null){
+    alert("GPS belum aktif. Aktifkan GPS terlebih dahulu.");
+    return;
+  }
+
+  if(mode === "manual"){
+    beginRun();
+  } else {
+    $("dragInfo").textContent =
+      "Menunggu kecepatan GPS melewati 3 km/jam.";
+  }
+}
+
+  if(!navigator.geolocation){
+    alert("Browser tidak mendukung GPS.");
+    return;
+  }
+
+  if(watch !== null) return;
+
+  $("gpsInfo").textContent = "Mencari sinyal GPS...";
+  $("gpsHome").textContent = "MENCARI";
+
+  watch = navigator.geolocation.watchPosition(pos=>{
+    const c = pos.coords;
+    const p = {lat:c.latitude,lng:c.longitude};
+    gpsPoint = p;
+
+    const speed = c.speed == null ? 0 : c.speed * 3.6;
+    const acc = c.accuracy;
+
+    $("gpsHome").textContent = "AKTIF";
+    $("accuracy").textContent = Math.round(acc)+" m";
+    $("speed").textContent = speed.toFixed(1);
+    $("speedStatus").textContent = "GPS AKTIF";
+    $("gpsInfo").textContent = "GPS aktif • Akurasi ±"+Math.round(acc)+" meter";
+    $("mapInfo").textContent = "GPS aktif • ±"+Math.round(acc)+" meter";
+
+    top = Math.max(top,speed);
+    $("topSpeed").textContent = top.toFixed(1);
+    $("topHome").textContent = top.toFixed(1);
+
+    if(leafletReady){
+      if(marker) marker.setLatLng([p.lat,p.lng]);
+      else marker = L.marker([p.lat,p.lng]).addTo(map);
+    }
+
+    if(follow && leafletReady) map.setView([p.lat,p.lng],17);
+
+    $("mapLink").href = "https://maps.google.com/?q="+p.lat+","+p.lng;
+
+    if(active && acc <= 15) updateRun(p,c);
+
+    if(mode==="auto" && !active && !finished && speed>3 && acc<=15){
+      beginRun();
+    }
+
+  },err=>{
+    $("gpsInfo").textContent = "GPS error: "+err.message;
+    $("gpsHome").textContent = "ERROR";
+    watch = null;
+  },{
+    enableHighAccuracy:true,
+    maximumAge:0,
+    timeout:20000
+  });
+}
+
 if(!navigator.geolocation){
 alert("Browser tidak mendukung GPS.");
 return;
@@ -459,7 +560,32 @@ $("dragTime").textContent=(elapsed/1000).toFixed(3);
 $("dragInfo").textContent="Target selesai. Tekan SAVE RUN untuk menyimpan.";
 }
 
+
 function dragReset(){
+  clearInterval(clock);
+
+  active = false;
+  finished = false;
+  total = 0;
+  last = null;
+  elapsed = 0;
+  peak = 0;
+  splits = [];
+
+  if(track) track.setLatLngs([]);
+
+  $("dragSpeed").textContent = "0.0";
+  $("dragDistance").textContent = "0.0 m";
+  $("dragTime").textContent = "0.000";
+  $("dragStatus").textContent = "SIAP";
+  $("progress").style.width = "0%";
+  $("progressText").textContent =
+    "0 / "+$("target").value+" meter";
+
+  $("splits").textContent = "Belum ada hasil pengukuran.";
+  $("dragInfo").textContent = "Siap melakukan pengukuran.";
+}
+
 clearInterval(clock);
 active=false;
 finished=false;
@@ -480,7 +606,38 @@ $("splits").textContent="Belum ada hasil pengukuran.";
 $("dragInfo").textContent="Siap melakukan pengukuran.";
 }
 
+
 function saveRun(){
+  if(!finished){
+    alert("Selesaikan pengukuran terlebih dahulu.");
+    return;
+  }
+
+  const record = {
+    id: Date.now(),
+    date: new Date().toLocaleString("id-ID"),
+    target: $("target").selectedOptions[0].text,
+    time: elapsed / 1000,
+    speed: peak,
+    distance: total,
+    bike: $("bike").value || "Motor tidak diisi",
+    engine: $("engine").value,
+    note: $("note").value,
+    splits: splits
+  };
+
+  try {
+    records.unshift(record);
+    localStorage.setItem("dti_history", JSON.stringify(records));
+    renderHistory();
+    alert("Hasil berhasil disimpan!");
+    dragReset();
+  } catch(error) {
+    records.shift();
+    alert("Gagal menyimpan riwayat. Periksa penyimpanan browser.");
+  }
+}
+
 if(!finished){
 alert("Selesaikan pengukuran terlebih dahulu.");
 return;
@@ -552,14 +709,68 @@ $("sort").onchange=renderHistory;
 
 $("target").onchange=dragReset;
 
+
 function clearHistory(){
+  if(records.length === 0){
+    alert("Riwayat masih kosong.");
+    return;
+  }
+
+  if(!confirm("Yakin ingin menghapus semua riwayat?")) return;
+
+  try{
+    localStorage.removeItem("dti_history");
+    records = [];
+    renderHistory();
+    alert("Semua riwayat berhasil dihapus.");
+  }catch(error){
+    alert("Gagal menghapus riwayat.");
+  }
+}
+
 if(!confirm("Hapus semua riwayat?"))return;
 records=[];
 localStorage.removeItem("dti_history");
 renderHistory();
 }
 
+
 function exportCSV(){
+  if(records.length === 0){
+    alert("Belum ada riwayat untuk diekspor.");
+    return;
+  }
+
+  const rows = [
+    ["Tanggal","Target","Waktu","Top Speed","Jarak","Motor","Mesin","Catatan"],
+    ...records.map(r=>[
+      r.date,r.target,r.time,r.speed,
+      r.distance,r.bike,r.engine,r.note
+    ])
+  ];
+
+  const csv = "\uFEFF" + rows.map(row =>
+    row.map(v =>
+      '"' + String(v ?? "").replace(/"/g,'""') + '"'
+    ).join(",")
+  ).join("\r\n");
+
+  const blob = new Blob([csv],{
+    type:"text/csv;charset=utf-8;"
+  });
+
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+
+  a.href = url;
+  a.download = "DragTime-Riwayat.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
 let rows=[
 ["Tanggal","Target","Waktu","Top Speed","Jarak","Motor","Mesin","Catatan"],
 ...records.map(r=>[
