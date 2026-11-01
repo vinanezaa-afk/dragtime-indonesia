@@ -3,804 +3,320 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>DragTime Indonesia V2</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DTI V3 PRO Racing</title>
 <style>
 *{box-sizing:border-box}
-body{margin:0;background:#080c15;color:#f5f7fb;font-family:Arial,sans-serif}
-header{padding:20px;background:#101827;border-bottom:1px solid #273249}
-header h1{margin:0;color:#35c9ee;font-size:23px}
-header p{margin:7px 0 0;color:#929caf;font-size:12px}
-main{max-width:760px;margin:auto;padding:14px}
-.card{background:#111827;border:1px solid #28344c;border-radius:18px;padding:16px;margin-bottom:15px}
-h3{margin:0 0 15px;font-size:16px}
-.muted{color:#929caf;font-size:12px;line-height:1.6}
-.row{display:flex;gap:9px;align-items:center}
-.row>*{flex:1;min-width:0}
-button,select,input{border:1px solid #35445e;background:#202b3d;color:white;border-radius:11px;padding:12px;font-size:14px}
-button{cursor:pointer}
-button.active{background:#087fe5;border-color:#087fe5}
-.primary{background:#00d879;color:#07150e;font-weight:bold;border:0}
-.danger{background:#f33155;border:0;font-weight:bold}
-input,select{width:100%}
-.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.stat{background:#0a111d;padding:14px;border-radius:12px}
-.stat small{color:#929caf;font-size:11px}
-.stat strong{display:block;font-size:27px;color:#35c9ee;margin-top:7px}
-.stat .green{color:#00dc91}
-.bar{height:9px;background:#273249;border-radius:20px;overflow:hidden;margin-top:15px}
-#progress{height:100%;width:0;background:#00dc91}
-#map{height:260px;border-radius:13px;background:#202b3d}
-.nav{display:flex;gap:7px;overflow:auto;padding:10px 0}
-.nav button{white-space:nowrap}
-.tag{display:inline-block;padding:5px 9px;background:#173a3a;color:#00dc91;border-radius:7px;font-size:11px}
-.record{background:#0a111d;border:1px solid #28344c;border-radius:13px;padding:13px;margin-top:10px}
-.record strong{color:#00dc91;font-size:20px}
-.filters{display:flex;gap:7px;overflow:auto;margin:12px 0}
-.filters button{white-space:nowrap}
-.filters button.active{background:#7b4dff;border-color:#7b4dff}
-.section{display:none}
-.section.show{display:block}
-footer{text-align:center;color:#667287;padding:20px;font-size:11px}
+body{margin:0;background:#090b10;color:#fff;font-family:Arial,sans-serif}
+header{padding:20px;background:#111722;border-bottom:1px solid #292e39}
+.logo{font-size:25px;font-weight:900;color:#ff3434}
+.logo span{color:white}
+.sub{font-size:11px;color:#999;margin-top:5px}
+main{padding:16px;padding-bottom:100px}
+.page{display:none}
+.page.active{display:block}
+h2{font-size:21px;margin:10px 0 18px}
+.card{background:#151b26;border:1px solid #292f3b;border-radius:15px;padding:17px;margin-bottom:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:#151b26;padding:15px;border-radius:13px;border:1px solid #292f3b}
+.stat small{color:#999}
+.stat strong{display:block;font-size:23px;margin-top:8px}
+button,select,input{font:inherit}
+button{border:0;border-radius:10px;padding:13px;background:#ed3038;color:white;font-weight:bold;cursor:pointer}
+button:active{opacity:.7}
+button.secondary{background:#292f3b;color:white}
+button:disabled{opacity:.4}
+.full{width:100%;margin-top:10px}
+.speed{font-size:58px;font-weight:900;text-align:center;margin:22px 0 5px}
+.unit{text-align:center;color:#999}
+.timer{text-align:center;font-size:38px;font-weight:bold;margin:20px}
+select,input{width:100%;padding:13px;background:#0d121b;color:white;border:1px solid #333b49;border-radius:9px;margin-top:8px}
+label{font-size:13px;color:#bbb}
+nav{position:fixed;bottom:0;left:0;right:0;background:#111722;border-top:1px solid #303744;display:grid;grid-template-columns:repeat(5,1fr);padding:9px 3px;z-index:5}
+nav button{background:transparent;color:#aaa;padding:9px 2px;font-size:11px}
+nav button.active{color:#ff444b}
+nav span{display:block;font-size:19px;margin-bottom:4px}
+.item{padding:12px 0;border-bottom:1px solid #303744}
+.muted{color:#999;font-size:13px}
+.red{color:#ff454b}
+#map{width:100%;height:300px;border:0;border-radius:12px;background:#202938}
 </style>
 </head>
 <body>
-
 <header>
-<h1>🏁 DRAGTIME INDONESIA</h1>
-<p>GPS TELEMETRY • MOTORSPORT • DRAG TIMER V2</p>
+ <div class="logo">DTI <span>V3 PRO</span></div>
+ <div class="sub">DRAGTIME INDONESIA • RACING EDITION</div>
 </header>
 
 <main>
-<div class="nav">
-<button class="active" onclick="page('home',this)">HOME</button>
-<button onclick="page('speedo',this)">SPEEDOMETER</button>
-<button onclick="page('drag',this)">DRAG TIMER</button>
-<button onclick="page('history',this)">HISTORY</button>
-<button onclick="page('community',this)">COMMUNITY</button>
-</div>
+<section class="page active" id="dashboard">
+ <h2>Dashboard</h2>
+ <div class="card">
+  <div class="muted">SELAMAT DATANG DI</div>
+  <h2>DTI V3 PRO RACING</h2>
+  <div class="muted">GPS Drag Timer • Speedometer • History</div>
+  <button class="full" onclick="showPage('drag')">MULAI PENGUKURAN</button>
+ </div>
+ <div class="grid">
+  <div class="stat"><small>Kecepatan</small><strong id="dashSpeed">0 km/h</strong></div>
+  <div class="stat"><small>Total Tes</small><strong id="dashCount">0</strong></div>
+  <div class="stat"><small>Jarak Terakhir</small><strong id="dashDistance">-</strong></div>
+  <div class="stat"><small>Waktu Terakhir</small><strong id="dashTime">-</strong></div>
+ </div>
+ <div class="card" style="margin-top:13px">
+  <b>Status GPS</b>
+  <p class="muted" id="gpsStatus">Belum diaktifkan</p>
+ </div>
+</section>
 
-<!-- HOME -->
-<div id="home" class="section show">
-<div class="card">
-<h3>DRAGTIME PRO TELEMETRY</h3>
-<p class="muted">GPS-based acceleration measurement and motorcycle telemetry.</p>
-<div class="stats">
-<div class="stat"><small>GPS STATUS</small><strong id="gpsHome" class="green">STANDBY</strong></div>
-<div class="stat"><small>TOP SPEED</small><strong id="topHome">0.0</strong></div>
-</div>
-</div>
-<div class="card">
-<h3>TELEMETRY MODES</h3>
-<button class="primary" style="width:100%;margin-bottom:10px" onclick="page('speedo')">◉ SPEEDOMETER GPS</button>
-<button class="danger" style="width:100%" onclick="page('drag')">🏁 DRAG TIMER</button>
-</div>
-<div class="card">
-<h3>QUICK INFORMATION</h3>
-<p class="muted">Jarak drag tersedia dari 60 ft sampai 500 meter. Hasil pengukuran bisa disimpan di perangkat.</p>
-</div>
-</div>
+<section class="page" id="drag">
+ <h2>Drag Timer</h2>
+ <div class="card">
+  <label>Pilih jarak pengukuran</label>
+  <select id="distance">
+   <option value="100">100 Meter</option>
+   <option value="200">200 Meter</option>
+   <option value="201">201 Meter</option>
+   <option value="203">203 Meter</option>
+   <option value="300">300 Meter</option>
+   <option value="402">402 Meter</option>
+   <option value="500">500 Meter</option>
+  </select>
+  <div class="speed" id="speed">0.0</div>
+  <div class="unit">KM/JAM</div>
+  <div class="timer" id="timer">00:00.00</div>
+  <div class="muted" style="text-align:center" id="progress">Jarak: 0 meter</div>
+  <button class="full" id="startBtn" onclick="startDrag()">MULAI GPS</button>
+  <button class="full secondary" onclick="stopDrag()">SELESAI / STOP</button>
+  <p class="muted" id="dragStatus">Tekan Mulai GPS untuk memulai.</p>
+ </div>
+ <div class="card">
+  <b>Mode pengukuran</b>
+  <p class="muted">Mulai manual. Pengukuran berhenti otomatis saat mencapai jarak target.</p>
+ </div>
+</section>
 
-<!-- SPEEDOMETER -->
-<div id="speedo" class="section">
-<div class="card" style="text-align:center">
-<p class="muted">LIVE GPS SPEEDOMETER</p>
-<div style="font-size:65px;font-weight:bold;color:#35d9ef" id="speed">0.0</div>
-<b>KM/H</b>
-<p class="muted" id="speedStatus">STANDBY</p>
-<div class="row">
-<div class="stat"><small>TOP SPEED</small><strong id="topSpeed">0.0</strong></div>
-<div class="stat"><small>AKURASI GPS</small><strong id="accuracy">--</strong></div>
-</div>
-</div>
-<div class="card">
-<h3>GPS CONTROL</h3>
-<button class="primary" style="width:100%" onclick="gpsStart()">AKTIFKAN GPS</button>
-<button style="width:100%;margin-top:9px" onclick="gpsStop()">MATIKAN GPS</button>
-<p class="muted" id="gpsInfo">GPS belum aktif.</p>
-</div>
-</div>
+<section class="page" id="maps">
+ <h2>Live Maps</h2>
+ <div class="card">
+  <p id="mapStatus" class="muted">Lokasi belum diambil.</p>
+  <button class="full" onclick="getLocation()">AMBIL LOKASI SAYA</button>
+  <button class="full secondary" onclick="openMap()">BUKA PETA</button>
+ </div>
+ <iframe id="map" title="Peta lokasi" loading="lazy"></iframe>
+</section>
 
-<!-- DRAG TIMER -->
-<div id="drag" class="section">
-<div class="card">
-<h3>DRAG TIMER SETUP</h3>
-<label class="muted">PILIH TARGET JARAK</label>
-<select id="target" style="margin:8px 0 14px">
-<option value="18.288">60 ft (18,3 m)</option>
-<option value="100">100 Meter</option>
-<option value="201">201 Meter</option>
-<option value="203">203 Meter</option>
-<option value="402">402 Meter</option>
-<option value="500" selected>500 Meter</option>
-</select>
-<label class="muted">MODE PENGUKURAN</label>
-<div class="row" style="margin-top:9px">
-<button id="manual" class="active" onclick="setMode('manual')">MANUAL</button>
-<button id="auto" onclick="setMode('auto')">OTOMATIS</button>
-</div>
-<p class="muted" id="modeInfo">Timer dimulai saat tombol mulai ditekan.</p>
-</div>
+<section class="page" id="history">
+ <h2>Riwayat Pengukuran</h2>
+ <div class="card">
+  <div id="historyList" class="muted">Belum ada riwayat.</div>
+  <button class="full secondary" onclick="clearHistory()">HAPUS RIWAYAT</button>
+ </div>
+</section>
 
-<div class="card">
-<div class="stats">
-<div class="stat"><small>KECEPATAN</small><strong id="dragSpeed">0.0</strong></div>
-<div class="stat"><small>WAKTU</small><strong id="dragTime">0.000</strong></div>
-<div class="stat"><small>JARAK</small><strong id="dragDistance">0.0 m</strong></div>
-<div class="stat"><small>STATUS</small><strong id="dragStatus" class="green">SIAP</strong></div>
-</div>
-<div class="bar"><div id="progress"></div></div>
-<p class="muted" id="progressText">0 / 500 meter</p>
-</div>
+<section class="page" id="more">
+ <h2>Menu Lainnya</h2>
+ <div class="grid">
+  <button onclick="showPage('speedometer')">Speedometer</button>
+  <button onclick="showPage('garage')">Garage</button>
+  <button onclick="showPage('statistics')">Statistik</button>
+  <button onclick="showPage('community')">Community</button>
+  <button onclick="showPage('profile')">Profil</button>
+  <button onclick="showPage('settings')">Pengaturan</button>
+ </div>
+</section>
 
-<div class="card">
-<h3>STAGE MILESTONES</h3>
-<div id="splits" class="muted">Belum ada hasil pengukuran.</div>
-</div>
+<section class="page" id="speedometer">
+ <h2>Speedometer</h2>
+ <div class="card">
+  <div class="speed" id="speed2">0.0</div>
+  <div class="unit">KM/JAM</div>
+  <button class="full" onclick="getLocation()">AKTIFKAN GPS</button>
+ </div>
+</section>
 
-<div class="card">
-<h3>DRAG TIMER CONTROL</h3>
-<button class="danger" style="width:100%" onclick="dragStart()">🏁 START RUN</button>
-<button style="width:100%;margin-top:9px" onclick="dragReset()">RESET</button>
-<button class="primary" style="width:100%;margin-top:9px" onclick="saveRun()">▣ SAVE RUN</button>
-<p class="muted" id="dragInfo">Aktifkan GPS untuk mengukur jarak dan waktu.</p>
-</div>
-</div>
+<section class="page" id="garage">
+ <h2>Garage</h2>
+ <div class="card">
+  <label>Nama motor</label>
+  <input id="bikeName" placeholder="Contoh: Yamaha F1ZR">
+  <button class="full" onclick="saveBike()">SIMPAN MOTOR</button>
+  <div id="bikeList" style="margin-top:15px"></div>
+ </div>
+</section>
 
-<!-- HISTORY -->
-<div id="history" class="section">
-<div class="card">
-<h3>TELEMETRY RECORDS</h3>
-<div class="row">
-<button onclick="exportCSV()">EXPORT CSV</button>
-<button onclick="clearHistory()">HAPUS RIWAYAT</button>
-</div>
-<div class="filters">
-<button class="active" data-filter="all">SEMUA</button>
-<button data-filter="60 ft">60 FT</button>
-<button data-filter="100 m">100 M</button>
-<button data-filter="201 m">201 M</button>
-<button data-filter="203 m">203 M</button>
-<button data-filter="402 m">402 M</button>
-<button data-filter="500 m">500 M</button>
-</div>
-<input id="search" placeholder="Cari nama motor..." style="margin-bottom:9px">
-<div class="row">
-<select id="engineFilter">
-<option value="all">Semua mesin</option>
-<option>2 Tak</option>
-<option>4 Tak</option>
-</select>
-<select id="sort">
-<option value="new">Terbaru</option>
-<option value="fast">Waktu tercepat</option>
-<option value="speed">Top speed tertinggi</option>
-</select>
-</div>
-<div id="records"></div>
-</div>
-</div>
+<section class="page" id="statistics">
+ <h2>Statistik</h2>
+ <div class="grid">
+  <div class="stat"><small>Total pengukuran</small><strong id="totalStat">0</strong></div>
+  <div class="stat"><small>Rata-rata waktu</small><strong id="avgStat">-</strong></div>
+ </div>
+</section>
 
-<!-- COMMUNITY -->
-<div id="community" class="section">
-<div class="card">
-<h3>DRAG COMMUNITY</h3>
-<p class="muted">Tempat melihat hasil pengukuran lokal dan data motor.</p>
-<p class="muted">Versi ini belum terhubung ke server komunitas online.</p>
-</div>
-<div class="card">
-<h3>DATA MOTOR</h3>
-<input id="bike" placeholder="Nama motor">
-<select id="engine" style="margin-top:9px">
-<option>2 Tak</option>
-<option>4 Tak</option>
-</select>
-<input id="note" placeholder="Catatan motor" style="margin-top:9px">
-</div>
-</div>
+<section class="page" id="community">
+ <h2>Community</h2>
+ <div class="card">
+  <b>DTI Community</b>
+  <p class="muted">Ruang komunitas DragTime Indonesia.</p>
+  <p class="muted">Posting video, komentar, dan leaderboard online akan diaktifkan setelah login dan penyimpanan online dihubungkan.</p>
+ </div>
+</section>
 
-<!-- MAP -->
-<div class="card">
-<h3>📍 LIVE GPS MAP</h3>
-<div id="map"></div>
-<div class="row" style="margin-top:10px">
-<button onclick="toggleFollow()" id="followBtn">IKUTI GPS: OFF</button>
-<button onclick="centerGPS()">CENTER GPS</button>
-</div>
-<p class="muted" id="mapInfo">Peta menunggu sinyal GPS.</p>
-<a id="mapLink" href="https://maps.google.com" target="_blank" style="color:#35c9ee">Buka Google Maps</a>
-</div>
+<section class="page" id="profile">
+ <h2>Profil</h2>
+ <div class="card">
+  <b>Pengguna DTI</b>
+  <p class="muted">Profil lokal perangkat ini.</p>
+ </div>
+</section>
 
+<section class="page" id="settings">
+ <h2>Pengaturan</h2>
+ <div class="card">
+  <b>DTI V3 PRO Racing</b>
+  <p class="muted">Versi 3.0 • Android Web App</p>
+  <button class="full secondary" onclick="showPage('dashboard')">KEMBALI KE DASHBOARD</button>
+ </div>
+</section>
 </main>
-<footer>DRAGTIME INDONESIA V2 • TEST DI LINTASAN TERTUTUP</footer>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<nav>
+ <button class="active" data-page="dashboard" onclick="showPage('dashboard')"><span>⌂</span>Home</button>
+ <button data-page="drag" onclick="showPage('drag')"><span>🏁</span>Drag</button>
+ <button data-page="maps" onclick="showPage('maps')"><span>⌖</span>Maps</button>
+ <button data-page="history" onclick="showPage('history')"><span>▤</span>History</button>
+ <button data-page="more" onclick="showPage('more')"><span>☰</span>More</button>
+</nav>
+
 <script>
-let mode="manual";
-let watch=null;
-let gpsPoint=null;
-let marker=null;
-let follow=false;
-let active=false;
-let finished=false;
-let total=0;
-let last=null;
-let startTime=0;
-let elapsed=0;
-let clock=null;
-let top=0;
-let peak=0;
-let filter="all";
-let splits=[];
-let records=[];
+let watchId=null, startTime=0, elapsed=0, startPos=null;
+let currentDistance=0, lastPos=null, running=false, timerInterval=null;
+let historyData=JSON.parse(localStorage.getItem('dti_history')||'[]');
+let bikeData=JSON.parse(localStorage.getItem('dti_bikes')||'[]');
+let currentLat=null,currentLon=null,currentSpeed=0;
 
-const $=id=>document.getElementById(id);
-
-try{
-records=JSON.parse(localStorage.getItem("dti_history")||"[]");
-}catch(e){records=[];}
-
-
-const leafletReady = typeof L !== "undefined";
-
-let map = leafletReady
-  ? L.map("map").setView([-6.9,109.7],13)
-  : {
-      setView(){},
-      invalidateSize(){}
-    };
-
-if (leafletReady) {
-  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-    attribution: "© OpenStreetMap"
-  }).addTo(map);
+function showPage(id){
+ document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+ document.getElementById(id).classList.add('active');
+ document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===id));
+ if(id==='history') renderHistory();
+ if(id==='statistics') renderStats();
+ if(id==='garage') renderBikes();
 }
 
-let track = leafletReady
-  ? L.polyline([], {color:"#00c8ee",weight:5}).addTo(map)
-  : {
-      setLatLngs(){},
-      addLatLng(){}
-    };
-
-
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
-attribution:"© OpenStreetMap"
-}).addTo(map);
-
-let track=L.polyline([],{color:"#00c8ee",weight:5}).addTo(map);
-
-
-function page(name,button){
-  const section = $(name);
-  if(!section) return;
-
-  document.querySelectorAll(".section").forEach(x=>{
-    x.classList.remove("show");
-  });
-
-  section.classList.add("show");
-
-  document.querySelectorAll(".nav button").forEach(x=>{
-    x.classList.remove("active");
-  });
-
-  if(button){
-    button.classList.add("active");
-  } else {
-    const navButton = document.querySelector(
-      `.nav button[onclick*="page('${name}'"]`
-    );
-    if(navButton) navButton.classList.add("active");
+function getLocation(){
+ if(!navigator.geolocation){alert('Browser tidak mendukung GPS');return}
+ document.getElementById('gpsStatus').textContent='Meminta izin GPS...';
+ navigator.geolocation.getCurrentPosition(pos=>{
+  currentLat=pos.coords.latitude;currentLon=pos.coords.longitude;
+  document.getElementById('gpsStatus').textContent='GPS aktif • Akurasi '+Math.round(pos.coords.accuracy)+' meter';
+  document.getElementById('mapStatus').textContent='Lokasi: '+currentLat.toFixed(5)+', '+currentLon.toFixed(5);
+  document.getElementById('map').src='https://www.openstreetmap.org/export/embed.html?bbox='+(currentLon-.01)+'%2C'+(currentLat-.01)+'%2C'+(currentLon+.01)+'%2C'+(currentLat+.01)+'&layer=mapnik&marker='+currentLat+'%2C'+currentLon;
+ },err=>alert('GPS gagal: '+err.message),{enableHighAccuracy:true,timeout:15000});
+}
+function openMap(){
+ if(currentLat===null){getLocation();return}
+ window.open('https://www.google.com/maps?q='+currentLat+','+currentLon,'_blank');
+}
+function distanceBetween(a,b){
+ const R=6371000,rad=x=>x*Math.PI/180;
+ const dLat=rad(b.latitude-a.latitude),dLon=rad(b.longitude-a.longitude);
+ const x=Math.sin(dLat/2)**2+Math.cos(rad(a.latitude))*Math.cos(rad(b.latitude))*Math.sin(dLon/2)**2;
+ return 2*R*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
+}
+function formatTime(ms){
+ let s=ms/1000;
+ return '00:'+String(Math.floor(s/60)).padStart(2,'0')+'.'+(s%60).toFixed(2).padStart(5,'0');
+}
+function startDrag(){
+ if(running)return;
+ if(!navigator.geolocation){alert('GPS tidak tersedia');return}
+ running=true;currentDistance=0;elapsed=0;startPos=null;lastPos=null;
+ startTime=Date.now();
+ document.getElementById('dragStatus').textContent='Mencari sinyal GPS...';
+ document.getElementById('startBtn').disabled=true;
+ timerInterval=setInterval(()=>{
+  elapsed=Date.now()-startTime;
+  document.getElementById('timer').textContent=formatTime(elapsed);
+ },50);
+ watchId=navigator.geolocation.watchPosition(pos=>{
+  let c=pos.coords;
+  currentSpeed=c.speed!==null?Math.max(0,c.speed*3.6):0;
+  if(c.accuracy>25){
+   document.getElementById('dragStatus').textContent='Akurasi GPS kurang baik: '+Math.round(c.accuracy)+' m';
+   return;
   }
-
-  if(map && typeof map.invalidateSize === "function"){
-    setTimeout(()=>map.invalidateSize(),200);
+  document.getElementById('speed').textContent=currentSpeed.toFixed(1);
+  document.getElementById('speed2').textContent=currentSpeed.toFixed(1);
+  document.getElementById('dashSpeed').textContent=currentSpeed.toFixed(1)+' km/h';
+  if(!startPos){
+   startPos={latitude:c.latitude,longitude:c.longitude};
+   lastPos={latitude:c.latitude,longitude:c.longitude};
+   document.getElementById('dragStatus').textContent='Pengukuran berjalan...';
+   return;
   }
+  let now={latitude:c.latitude,longitude:c.longitude};
+  let step=distanceBetween(lastPos,now);
+  if(step<30)currentDistance+=step;
+  lastPos=now;
+  document.getElementById('progress').textContent='Jarak: '+currentDistance.toFixed(1)+' meter';
+  let target=Number(document.getElementById('distance').value);
+  if(currentDistance>=target)stopDrag();
+ },err=>{
+  document.getElementById('dragStatus').textContent='GPS error: '+err.message;
+  stopDrag();
+ },{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 }
-
-
-
-function setMode(m){
-if(active)return;
-mode=m;
-$("manual").classList.toggle("active",m==="manual");
-$("auto").classList.toggle("active",m==="auto");
-$("modeInfo").textContent=m==="manual"
-?"Timer dimulai saat tombol START RUN ditekan."
-:"Timer otomatis mulai saat kecepatan GPS melewati 3 km/jam.";
+function stopDrag(){
+ if(!running)return;
+ running=false;
+ if(watchId!==null)navigator.geolocation.clearWatch(watchId);
+ clearInterval(timerInterval);
+ document.getElementById('startBtn').disabled=false;
+ if(currentDistance>0){
+  let record={distance:Number(document.getElementById('distance').value),elapsed:elapsed/1000,speed:currentSpeed,date:new Date().toLocaleString('id-ID')};
+  historyData.unshift(record);
+  localStorage.setItem('dti_history',JSON.stringify(historyData));
+  document.getElementById('dragStatus').textContent='Pengukuran selesai. Riwayat tersimpan di perangkat.';
+  updateDashboard();
+ }else{
+  document.getElementById('dragStatus').textContent='Pengukuran dihentikan.';
+ }
 }
-
-function distance(a,b){
-const R=6371000;
-const rad=x=>x*Math.PI/180;
-let dLat=rad(b.lat-a.lat);
-let dLon=rad(b.lng-a.lng);
-let x=Math.sin(dLat/2)**2+
-Math.cos(rad(a.lat))*Math.cos(rad(b.lat))*Math.sin(dLon/2)**2;
-return R*2*Math.atan2(Math.sqrt(x),Math.sqrt(1-x));
-}
-
-
-
-function dragStart(){
-  if(active || finished) return;
-
-  if(!gpsPoint){
-    alert("Aktifkan GPS dan tunggu lokasi ditemukan.");
-    gpsStart();
-    return;
-  }
-
-  if(!navigator.geolocation || watch === null){
-    alert("GPS belum aktif. Aktifkan GPS terlebih dahulu.");
-    return;
-  }
-
-  if(mode === "manual"){
-    beginRun();
-  } else {
-    $("dragInfo").textContent =
-      "Menunggu kecepatan GPS melewati 3 km/jam.";
-  }
-}
-
-  if(!navigator.geolocation){
-    alert("Browser tidak mendukung GPS.");
-    return;
-  }
-
-  if(watch !== null) return;
-
-  $("gpsInfo").textContent = "Mencari sinyal GPS...";
-  $("gpsHome").textContent = "MENCARI";
-
-  watch = navigator.geolocation.watchPosition(pos=>{
-    const c = pos.coords;
-    const p = {lat:c.latitude,lng:c.longitude};
-    gpsPoint = p;
-
-    const speed = c.speed == null ? 0 : c.speed * 3.6;
-    const acc = c.accuracy;
-
-    $("gpsHome").textContent = "AKTIF";
-    $("accuracy").textContent = Math.round(acc)+" m";
-    $("speed").textContent = speed.toFixed(1);
-    $("speedStatus").textContent = "GPS AKTIF";
-    $("gpsInfo").textContent = "GPS aktif • Akurasi ±"+Math.round(acc)+" meter";
-    $("mapInfo").textContent = "GPS aktif • ±"+Math.round(acc)+" meter";
-
-    top = Math.max(top,speed);
-    $("topSpeed").textContent = top.toFixed(1);
-    $("topHome").textContent = top.toFixed(1);
-
-    if(leafletReady){
-      if(marker) marker.setLatLng([p.lat,p.lng]);
-      else marker = L.marker([p.lat,p.lng]).addTo(map);
-    }
-
-    if(follow && leafletReady) map.setView([p.lat,p.lng],17);
-
-    $("mapLink").href = "https://maps.google.com/?q="+p.lat+","+p.lng;
-
-    if(active && acc <= 15) updateRun(p,c);
-
-    if(mode==="auto" && !active && !finished && speed>3 && acc<=15){
-      beginRun();
-    }
-
-  },err=>{
-    $("gpsInfo").textContent = "GPS error: "+err.message;
-    $("gpsHome").textContent = "ERROR";
-    watch = null;
-  },{
-    enableHighAccuracy:true,
-    maximumAge:0,
-    timeout:20000
-  });
-}
-
-if(!navigator.geolocation){
-alert("Browser tidak mendukung GPS.");
-return;
-}
-if(watch!==null)return;
-
-$("gpsInfo").textContent="Mencari sinyal GPS...";
-
-watch=navigator.geolocation.watchPosition(pos=>{
-let c=pos.coords;
-let p={lat:c.latitude,lng:c.longitude};
-gpsPoint=p;
-
-let speed=c.speed===null?0:c.speed*3.6;
-let acc=c.accuracy;
-
-$("gpsHome").textContent="AKTIF";
-$("accuracy").textContent=Math.round(acc)+" m";
-$("speed").textContent=speed.toFixed(1);
-$("gpsInfo").textContent="GPS aktif • Akurasi ±"+Math.round(acc)+" meter";
-$("mapInfo").textContent="GPS aktif • ±"+Math.round(acc)+" meter";
-
-top=Math.max(top,speed);
-$("topSpeed").textContent=top.toFixed(1);
-$("topHome").textContent=top.toFixed(1);
-
-if (leafletReady) {
-  if(marker) marker.setLatLng([p.lat,p.lng]);
-  else marker=L.marker([p.lat,p.lng]).addTo(map);
-}
-
-
-if(follow)map.setView([p.lat,p.lng],17);
-
-$("mapLink").href="https://maps.google.com/?q="+p.lat+","+p.lng;
-
-if(active&&acc<=15){
-updateRun(p,c);
-}
-
-if(mode==="auto"&&!active&&!finished&&speed>3&&acc<=15){
-beginRun();
-}
-},err=>{
-$("gpsInfo").textContent="GPS error: "+err.message;
-$("gpsHome").textContent="ERROR";
-},{enableHighAccuracy:true,maximumAge:0,timeout:20000});
-}
-
-function gpsStop(){
-if(watch!==null){
-navigator.geolocation.clearWatch(watch);
-watch=null;
-}
-$("gpsInfo").textContent="GPS dimatikan.";
-$("gpsHome").textContent="OFF";
-}
-
-function toggleFollow(){
-follow=!follow;
-$("followBtn").textContent="IKUTI GPS: "+(follow?"ON":"OFF");
-if(follow)centerGPS();
-}
-
-function centerGPS(){
-if(gpsPoint){
-map.setView([gpsPoint.lat,gpsPoint.lng],17);
-}
-}
-
-function dragStart(){
-if(active)return;
-if(!gpsPoint){
-alert("Aktifkan GPS dan tunggu lokasi ditemukan.");
-gpsStart();
-return;
-}
-if(mode==="manual")beginRun();
-else $("dragInfo").textContent="Menunggu motor bergerak melewati 3 km/jam.";
-}
-
-function beginRun(){
-if(active||finished)return;
-active=true;
-total=0;
-last=null;
-peak=0;
-splits=[];
-track.setLatLngs([]);
-startTime=Date.now();
-$("dragStatus").textContent="JALAN";
-$("dragInfo").textContent="Pengukuran sedang berlangsung.";
-clearInterval(clock);
-clock=setInterval(()=>{
-elapsed=Date.now()-startTime;
-$("dragTime").textContent=(elapsed/1000).toFixed(3);
-},20);
-}
-
-function updateRun(p,c){
-if(!active)return;
-let speed=c.speed===null?0:c.speed*3.6;
-peak=Math.max(peak,speed);
-
-if(last){
-let d=distance(last,p);
-if(d<0.8||d>12)return;
-total+=d;
-}else{
-last=p;
-return;
-}
-last=p;
-
-let now=Date.now();
-let target=Number($("target").value);
-
-let stages=[
-{m:18.288,n:"60 ft"},
-{m:100,n:"100 m"},
-{m:201,n:"201 m"},
-{m:203,n:"203 m"},
-{m:402,n:"402 m"},
-{m:500,n:"500 m"}
-];
-
-stages.forEach(s=>{
-if(total>=s.m&&!splits.some(x=>x.name===s.n)){
-splits.push({name:s.n,time:(now-startTime)/1000,speed});
-}
-});
-
-$("dragDistance").textContent=total.toFixed(1)+" m";
-$("dragSpeed").textContent=speed.toFixed(1);
-$("progress").style.width=Math.min(100,total/target*100)+"%";
-$("progressText").textContent=total.toFixed(1)+" / "+target+" meter";
-
-$("splits").innerHTML=splits.map(s=>
-"<div class='record'>"+s.name+
-" • <b>"+s.time.toFixed(3)+" s</b> • "+
-s.speed.toFixed(1)+" km/jam</div>"
-).join("");
-
-track.addLatLng([p.lat,p.lng]);
-
-if(total>=target)finishRun();
-}
-
-function finishRun(){
-if(!active)return;
-active=false;
-finished=true;
-elapsed=Date.now()-startTime;
-clearInterval(clock);
-$("dragStatus").textContent="SELESAI";
-$("dragTime").textContent=(elapsed/1000).toFixed(3);
-$("dragInfo").textContent="Target selesai. Tekan SAVE RUN untuk menyimpan.";
-}
-
-
-function dragReset(){
-  clearInterval(clock);
-
-  active = false;
-  finished = false;
-  total = 0;
-  last = null;
-  elapsed = 0;
-  peak = 0;
-  splits = [];
-
-  if(track) track.setLatLngs([]);
-
-  $("dragSpeed").textContent = "0.0";
-  $("dragDistance").textContent = "0.0 m";
-  $("dragTime").textContent = "0.000";
-  $("dragStatus").textContent = "SIAP";
-  $("progress").style.width = "0%";
-  $("progressText").textContent =
-    "0 / "+$("target").value+" meter";
-
-  $("splits").textContent = "Belum ada hasil pengukuran.";
-  $("dragInfo").textContent = "Siap melakukan pengukuran.";
-}
-
-clearInterval(clock);
-active=false;
-finished=false;
-total=0;
-last=null;
-elapsed=0;
-peak=0;
-splits=[];
-track.setLatLngs([]);
-
-$("dragSpeed").textContent="0.0";
-$("dragDistance").textContent="0.0 m";
-$("dragTime").textContent="0.000";
-$("dragStatus").textContent="SIAP";
-$("progress").style.width="0%";
-$("progressText").textContent="0 / "+$("target").value+" meter";
-$("splits").textContent="Belum ada hasil pengukuran.";
-$("dragInfo").textContent="Siap melakukan pengukuran.";
-}
-
-
-function saveRun(){
-  if(!finished){
-    alert("Selesaikan pengukuran terlebih dahulu.");
-    return;
-  }
-
-  const record = {
-    id: Date.now(),
-    date: new Date().toLocaleString("id-ID"),
-    target: $("target").selectedOptions[0].text,
-    time: elapsed / 1000,
-    speed: peak,
-    distance: total,
-    bike: $("bike").value || "Motor tidak diisi",
-    engine: $("engine").value,
-    note: $("note").value,
-    splits: splits
-  };
-
-  try {
-    records.unshift(record);
-    localStorage.setItem("dti_history", JSON.stringify(records));
-    renderHistory();
-    alert("Hasil berhasil disimpan!");
-    dragReset();
-  } catch(error) {
-    records.shift();
-    alert("Gagal menyimpan riwayat. Periksa penyimpanan browser.");
-  }
-}
-
-if(!finished){
-alert("Selesaikan pengukuran terlebih dahulu.");
-return;
-}
-
-let target=$("target").selectedOptions[0].text;
-
-let record={
-date:new Date().toLocaleString("id-ID"),
-target:target,
-time:elapsed/1000,
-speed:peak,
-distance:total,
-bike:$("bike").value||"Motor tidak diisi",
-engine:$("engine").value,
-note:$("note").value,
-splits:splits
-};
-
-records.unshift(record);
-localStorage.setItem("dti_history",JSON.stringify(records));
-renderHistory();
-alert("Hasil berhasil disimpan!");
-}
-
 function renderHistory(){
-let q=$("search").value.toLowerCase();
-let ef=$("engineFilter").value;
-let sort=$("sort").value;
-
-let data=records.filter(r=>
-(filter==="all"||r.target===filter)&&
-(ef==="all"||r.engine===ef)&&
-(r.bike+" "+r.note).toLowerCase().includes(q)
-);
-
-if(sort==="fast")data.sort((a,b)=>a.time-b.time);
-if(sort==="speed")data.sort((a,b)=>b.speed-a.speed);
-
-$("records").innerHTML=data.length?data.map(r=>`
-<div class="record">
-<span class="tag">${r.target}</span>
-<p><strong>${r.time.toFixed(3)} s</strong></p>
-<p>${r.speed.toFixed(1)} km/jam • ${r.distance.toFixed(1)} m</p>
-<b>${escapeHTML(r.bike)}</b> • ${r.engine}
-<p class="muted">${escapeHTML(r.date)}</p>
-<p class="muted">${escapeHTML(r.note)}</p>
-</div>
-`).join(""):"<p class='muted'>Belum ada riwayat.</p>";
+ let el=document.getElementById('historyList');
+ if(!historyData.length){el.textContent='Belum ada riwayat.';return}
+ el.innerHTML=historyData.map((r,i)=>`<div class="item"><b>${r.distance} meter</b><div class="muted">Waktu: ${r.elapsed.toFixed(2)} detik • Kecepatan: ${r.speed.toFixed(1)} km/jam</div><div class="muted">${r.date}</div></div>`).join('');
 }
-
-function escapeHTML(s){
-return String(s).replace(/[&<>"']/g,c=>({
-"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-}[c]));
-}
-
-document.querySelectorAll("[data-filter]").forEach(b=>{
-b.onclick=()=>{
-filter=b.dataset.filter;
-document.querySelectorAll("[data-filter]").forEach(x=>x.classList.toggle("active",x===b));
-renderHistory();
-};
-});
-
-$("search").oninput=renderHistory;
-$("engineFilter").onchange=renderHistory;
-$("sort").onchange=renderHistory;
-
-$("target").onchange=dragReset;
-
-
 function clearHistory(){
-  if(records.length === 0){
-    alert("Riwayat masih kosong.");
-    return;
-  }
-
-  if(!confirm("Yakin ingin menghapus semua riwayat?")) return;
-
-  try{
-    localStorage.removeItem("dti_history");
-    records = [];
-    renderHistory();
-    alert("Semua riwayat berhasil dihapus.");
-  }catch(error){
-    alert("Gagal menghapus riwayat.");
-  }
+ if(!confirm('Hapus semua riwayat?'))return;
+ historyData=[];localStorage.setItem('dti_history','[]');renderHistory();updateDashboard();
 }
-
-if(!confirm("Hapus semua riwayat?"))return;
-records=[];
-localStorage.removeItem("dti_history");
-renderHistory();
+function updateDashboard(){
+ document.getElementById('dashCount').textContent=historyData.length;
+ if(historyData[0]){
+  document.getElementById('dashDistance').textContent=historyData[0].distance+' m';
+  document.getElementById('dashTime').textContent=historyData[0].elapsed.toFixed(2)+' dtk';
+ }
 }
-
-
-function exportCSV(){
-  if(records.length === 0){
-    alert("Belum ada riwayat untuk diekspor.");
-    return;
-  }
-
-  const rows = [
-    ["Tanggal","Target","Waktu","Top Speed","Jarak","Motor","Mesin","Catatan"],
-    ...records.map(r=>[
-      r.date,r.target,r.time,r.speed,
-      r.distance,r.bike,r.engine,r.note
-    ])
-  ];
-
-  const csv = "\uFEFF" + rows.map(row =>
-    row.map(v =>
-      '"' + String(v ?? "").replace(/"/g,'""') + '"'
-    ).join(",")
-  ).join("\r\n");
-
-  const blob = new Blob([csv],{
-    type:"text/csv;charset=utf-8;"
-  });
-
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-
-  a.href = url;
-  a.download = "DragTime-Riwayat.csv";
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-
-  setTimeout(()=>URL.revokeObjectURL(url),1000);
+function renderStats(){
+ document.getElementById('totalStat').textContent=historyData.length;
+ document.getElementById('avgStat').textContent=historyData.length?(historyData.reduce((a,b)=>a+b.elapsed,0)/historyData.length).toFixed(2)+' dtk':'-';
 }
-
-let rows=[
-["Tanggal","Target","Waktu","Top Speed","Jarak","Motor","Mesin","Catatan"],
-...records.map(r=>[
-r.date,r.target,r.time,r.speed,r.distance,r.bike,r.engine,r.note
-])
-];
-let csv=rows.map(r=>r.map(v=>'"'+String(v??"").replace(/"/g,'""')+'"').join(",")).join("\n");
-let blob=new Blob([csv],{type:"text/csv"});
-let url=URL.createObjectURL(blob);
-let a=document.createElement("a");
-a.href=url;
-a.download="DragTime-Riwayat.csv";
-a.click();
-URL.revokeObjectURL(url);
+function saveBike(){
+ let n=document.getElementById('bikeName').value.trim();
+ if(!n){alert('Isi nama motor dulu');return}
+ bikeData.push(n);localStorage.setItem('dti_bikes',JSON.stringify(bikeData));
+ document.getElementById('bikeName').value='';renderBikes();
 }
-
-renderHistory();
+function renderBikes(){
+ document.getElementById('bikeList').innerHTML=bikeData.length?bikeData.map(n=>'<div class="item">🏍️ '+escapeText(n)+'</div>').join(''):'<p class="muted">Belum ada motor.</p>';
+}
+function escapeText(s){
+ return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+updateDashboard();
+renderBikes();
 </script>
-</<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-const SUPABASE_URL = "https://hsimdalolwojdsratcqj.supabase.co";
-
-const SUPABASE_KEY = "sb_publishable_NvdVymfg_XXa83DdGZ7uhw_M7kmUGHy";
-
-const supabaseClient = window.supabase.createClient(
-  SUPABASE_URL,
-  SUPABASE_KEY
-);
-
-console.log("DTI V3 PRO terhubung ke Supabase");
-</script>>
+</body>
 </html>
