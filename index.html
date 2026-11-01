@@ -389,5 +389,69 @@ const dtiSupabase = window.supabase.createClient(
 
 console.log("DTI V3 PRO: Supabase siap");
 </script>
+ <div id="dti-auth" style="position:fixed;inset:0;background:#090b10;color:white;z-index:99999;display:none;align-items:center;justify-content:center;padding:20px;font-family:Arial">
+  <div style="width:100%;max-width:380px;background:#171b24;padding:25px;border-radius:18px">
+    <h2 style="color:#ff3030;text-align:center">DTI V3 PRO</h2>
+    <h3 id="auth-title">LOGIN</h3>
+    <input id="auth-email" type="email" placeholder="Alamat Gmail" style="width:100%;padding:13px;margin:8px 0;box-sizing:border-box">
+    <input id="auth-password" type="password" placeholder="Password" style="width:100%;padding:13px;margin:8px 0;box-sizing:border-box">
+    <button onclick="dtiLogin()" style="width:100%;padding:13px;background:#e32636;color:white;border:0;border-radius:8px;margin-top:12px">LOGIN</button>
+    <button onclick="dtiRegister()" style="width:100%;padding:13px;margin-top:8px">DAFTAR AKUN</button>
+    <p id="auth-message" style="font-size:13px"></p>
+  </div>
+</div>
+
+<script>
+const authBox = document.getElementById("dti-auth");
+
+async function dtiLogin(){
+  const email = document.getElementById("auth-email").value.trim();
+  const password = document.getElementById("auth-password").value;
+  const msg = document.getElementById("auth-message");
+
+  const {data,error} = await dtiSupabase.auth.signInWithPassword({email,password});
+  if(error){msg.textContent=error.message;return;}
+
+  const {data:profile,error:profileError} = await dtiSupabase
+    .from("profiles").select("approved,role").eq("id",data.user.id).single();
+
+  if(profileError || !profile || !profile.approved){
+    await dtiSupabase.auth.signOut();
+    msg.textContent="Akun menunggu persetujuan Owner.";
+    return;
+  }
+
+  authBox.style.display="none";
+  location.reload();
+}
+
+async function dtiRegister(){
+  const email = document.getElementById("auth-email").value.trim();
+  const password = document.getElementById("auth-password").value;
+  const msg = document.getElementById("auth-message");
+
+  const {error} = await dtiSupabase.auth.signUp({email,password});
+  msg.textContent = error ? error.message :
+    "Pendaftaran berhasil. Tunggu persetujuan Owner.";
+}
+
+async function dtiCheckLogin(){
+  const {data} = await dtiSupabase.auth.getSession();
+  if(!data.session){
+    authBox.style.display="flex";
+    return;
+  }
+
+  const {data:profile,error} = await dtiSupabase
+    .from("profiles").select("approved").eq("id",data.session.user.id).single();
+
+  if(error || !profile || !profile.approved){
+    await dtiSupabase.auth.signOut();
+    authBox.style.display="flex";
+  }
+}
+
+dtiCheckLogin();
+</script>
 </body>
 </html>
