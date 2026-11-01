@@ -376,5 +376,18 @@ function escapeText(s){
 updateDashboard();
 renderBikes();
 </script>
+ <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+const SUPABASE_URL = "https://hsimdalolwojdsratcqj.supabase.co";
+const SUPABASE_KEY = "sb_publishable_NvdVymfg_XXa83DdGZ7uhw_M7kmUGHy";
+
+const dtiSupabase = window.supabase.createClient(
+  SUPABASE_URL,
+  SUPABASE_KEY
+);
+
+console.log("DTI V3 PRO: Supabase siap");
+</script>
 </body>
 </html>
