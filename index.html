@@ -86,10 +86,14 @@ nav span{display:block;font-size:19px;margin-bottom:4px}
   <div class="unit">KM/JAM</div>
   <div class="timer" id="timer">00:00.00</div>
   <div class="muted" style="text-align:center" id="progress">Jarak: 0 meter</div>
-  <button class="full" id="startBtn" onclick="startDrag()">MULAI GPS</button>
-  <button class="full secondary" onclick="stopDrag()">SELESAI / STOP</button>
-  <p class="muted" id="dragStatus">Tekan Mulai GPS untuk memulai.</p>
- </div>
+
+
+<button class="full" id="startBtn" onclick="startDrag('manual')">MULAI MANUAL</button>
+<button class="full secondary" id="autoBtn" onclick="startDrag('auto')">AUTO START GPS</button>
+<button class="full secondary" onclick="stopDrag()">SELESAI / STOP</button>
+<p class="muted" id="dragStatus">Pilih mode pengukuran.</p>
+
+
  <div class="card">
   <b>Mode pengukuran</b>
   <p class="muted">Mulai manual. Pengukuran berhenti otomatis saat mencapai jarak target.</p>
@@ -228,46 +232,100 @@ function formatTime(ms){
  let s=ms/1000;
  return '00:'+String(Math.floor(s/60)).padStart(2,'0')+'.'+(s%60).toFixed(2).padStart(5,'0');
 }
-function startDrag(){
+
+function startDrag(mode = 'manual'){
  if(running)return;
- if(!navigator.geolocation){alert('GPS tidak tersedia');return}
- running=true;currentDistance=0;elapsed=0;startPos=null;lastPos=null;
- startTime=Date.now();
- document.getElementById('dragStatus').textContent='Mencari sinyal GPS...';
+ if(!navigator.geolocation){
+  alert('GPS tidak tersedia');
+  return;
+ }
+
+ running=true;
+ currentDistance=0;
+ elapsed=0;
+ startPos=null;
+ lastPos=null;
+
+ let autoMode=mode==='auto';
+ let startDetected=!autoMode;
+ let movingSince=null;
+
+ document.getElementById('dragStatus').textContent=
+  autoMode?'AUTO GPS aktif. Menunggu motor bergerak...':'Mencari sinyal GPS...';
+
  document.getElementById('startBtn').disabled=true;
- timerInterval=setInterval(()=>{
-  elapsed=Date.now()-startTime;
-  document.getElementById('timer').textContent=formatTime(elapsed);
- },50);
+
+ function beginTimer(){
+  if(startDetected)return;
+  startDetected=true;
+  startTime=Date.now();
+
+  document.getElementById('dragStatus').textContent='AUTO START! Pengukuran berjalan...';
+
+  timerInterval=setInterval(()=>{
+   elapsed=Date.now()-startTime;
+   document.getElementById('timer').textContent=formatTime(elapsed);
+  },50);
+ }
+
+ if(!autoMode){
+  startDetected=true;
+  startTime=Date.now();
+  timerInterval=setInterval(()=>{
+   elapsed=Date.now()-startTime;
+   document.getElementById('timer').textContent=formatTime(elapsed);
+  },50);
+ }
+
  watchId=navigator.geolocation.watchPosition(pos=>{
   let c=pos.coords;
   currentSpeed=c.speed!==null?Math.max(0,c.speed*3.6):0;
-  if(c.accuracy>25){
+
+  if(c.accuracy>15){
    document.getElementById('dragStatus').textContent='Akurasi GPS kurang baik: '+Math.round(c.accuracy)+' m';
+   movingSince=null;
    return;
   }
+
   document.getElementById('speed').textContent=currentSpeed.toFixed(1);
   document.getElementById('speed2').textContent=currentSpeed.toFixed(1);
   document.getElementById('dashSpeed').textContent=currentSpeed.toFixed(1)+' km/h';
+
+  if(autoMode&&!startDetected){
+   if(currentSpeed>=3){
+    if(movingSince===null)movingSince=Date.now();
+    if(Date.now()-movingSince>=2000)beginTimer();
+   }else{
+    movingSince=null;
+   }
+   return;
+  }
+
+  let now={latitude:c.latitude,longitude:c.longitude};
+
   if(!startPos){
-   startPos={latitude:c.latitude,longitude:c.longitude};
-   lastPos={latitude:c.latitude,longitude:c.longitude};
+   startPos=now;
+   lastPos=now;
    document.getElementById('dragStatus').textContent='Pengukuran berjalan...';
    return;
   }
-  let now={latitude:c.latitude,longitude:c.longitude};
+
   let step=distanceBetween(lastPos,now);
   if(step<30)currentDistance+=step;
   lastPos=now;
+
   document.getElementById('progress').textContent='Jarak: '+currentDistance.toFixed(1)+' meter';
+
   let target=Number(document.getElementById('distance').value);
   if(currentDistance>=target)stopDrag();
+
  },err=>{
   document.getElementById('dragStatus').textContent='GPS error: '+err.message;
   stopDrag();
  },{enableHighAccuracy:true,maximumAge:0,timeout:20000});
 }
-function stopDrag(){
+
+ function stopDrag(){
  if(!running)return;
  running=false;
  if(watchId!==null)navigator.geolocation.clearWatch(watchId);
