@@ -404,26 +404,43 @@ console.log("DTI V3 PRO: Supabase siap");
 <script>
 const authBox = document.getElementById("dti-auth");
 
-async function dtiLogin(){
+ async function dtiLogin(){
   const email = document.getElementById("auth-email").value.trim();
   const password = document.getElementById("auth-password").value;
   const msg = document.getElementById("auth-message");
 
-  const {data,error} = await dtiSupabase.auth.signInWithPassword({email,password});
-  if(error){msg.textContent=error.message;return;}
+  const {data,error} = await dtiSupabase.auth.signInWithPassword({
+    email,
+    password
+  });
 
-  const {data:profile,error:profileError} = await dtiSupabase
-    .from("profiles").select("approved,role").eq("id",data.user.id).single();
-
-  if(profileError || !profile || !profile.approved){
-    await dtiSupabase.auth.signOut();
-    msg.textContent="Akun menunggu persetujuan Owner.";
+  if(error){
+    msg.textContent = error.message;
     return;
   }
 
-  authBox.style.display="none";
+  const {data:profile,error:profileError} = await dtiSupabase
+    .from("profiles")
+    .select("approved,role")
+    .eq("id",data.user.id)
+    .maybeSingle();
+
+  if(profileError){
+    msg.textContent = "Gagal membaca profil: " + profileError.message;
+    return;
+  }
+
+  if(!profile || profile.approved !== true){
+    await dtiSupabase.auth.signOut();
+    msg.textContent = "Akun belum disetujui Owner.";
+    return;
+  }
+
+  authBox.style.display = "none";
   location.reload();
 }
+
+  
 
 async function dtiRegister(){
   const email = document.getElementById("auth-email").value.trim();
