@@ -470,5 +470,226 @@ async function dtiCheckLogin(){
 
 dtiCheckLogin();
 </script>
+ 
+<!-- DTI OWNER DASHBOARD -->
+<style>
+#dti-owner-button {
+  display:none;
+  position:fixed;
+  right:15px;
+  bottom:85px;
+  z-index:9998;
+  background:#e32636;
+  color:white;
+  border:0;
+  border-radius:12px;
+  padding:14px 18px;
+  font-weight:bold;
+}
+#dti-owner-panel {
+  display:none;
+  position:fixed;
+  z-index:9999;
+  inset:5% 3%;
+  background:#11151d;
+  color:white;
+  border:1px solid #343b49;
+  border-radius:18px;
+  padding:16px;
+  overflow:auto;
+  font-family:Arial,sans-serif;
+}
+.dti-member {
+  background:#202632;
+  border-radius:12px;
+  padding:12px;
+  margin:12px 0;
+  overflow-wrap:anywhere;
+}
+.dti-action {
+  background:#e32636;
+  color:white;
+  border:0;
+  border-radius:8px;
+  padding:9px;
+  margin:4px 3px;
+}
+.dti-secondary {
+  background:#394456;
+  color:white;
+  border:0;
+  border-radius:8px;
+  padding:9px;
+  margin:4px 3px;
+}
+</style>
+
+<button id="dti-owner-button"
+ onclick="dtiOwnerOpen()">OWNER DASHBOARD</button>
+
+<div id="dti-owner-panel">
+  <h2>🏁 DTI OWNER PANEL</h2>
+  <p>Manajemen anggota dan VIP</p>
+
+  <button class="dti-secondary"
+   onclick="dtiOwnerLoad()">↻ Refresh Anggota</button>
+
+  <button class="dti-secondary"
+   onclick="dtiOwnerClose()">Tutup</button>
+
+  <div id="dti-owner-message"></div>
+  <div id="dti-owner-members">Memuat anggota...</div>
+</div>
+
+<script>
+async function dtiOwnerInit(){
+  const {data:{session}} =
+    await dtiSupabase.auth.getSession();
+
+  if(!session) return;
+
+  const {data:profile,error} = await dtiSupabase
+    .from("profiles")
+    .select("role,approved")
+    .eq("id",session.user.id)
+    .maybeSingle();
+
+  if(error || !profile) return;
+
+  if(profile.role === "owner" && profile.approved){
+    document.getElementById("dti-owner-button")
+      .style.display = "block";
+  }
+}
+
+function dtiOwnerOpen(){
+  document.getElementById("dti-owner-panel")
+    .style.display = "block";
+  dtiOwnerLoad();
+}
+
+function dtiOwnerClose(){
+  document.getElementById("dti-owner-panel")
+    .style.display = "none";
+}
+
+function dtiOwnerMessage(message){
+  document.getElementById("dti-owner-message")
+    .textContent = message;
+}
+
+function dtiOwnerEscape(value){
+  return String(value ?? "").replace(/[&<>"']/g,
+    c => ({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#39;"
+    })[c]
+  );
+}
+
+async function dtiOwnerLoad(){
+  const box = document.getElementById("dti-owner-members");
+  box.textContent = "Memuat anggota...";
+
+  const {data,error} =
+    await dtiSupabase.rpc("owner_get_members");
+
+  if(error){
+    box.textContent = "Gagal memuat: " + error.message;
+    return;
+  }
+
+  const members = (data || []).filter(
+    m => m.role === "member"
+  );
+
+  if(!members.length){
+    box.textContent = "Belum ada anggota.";
+    return;
+  }
+
+  box.innerHTML = members.map(m => `
+    <div class="dti-member">
+      <b>${dtiOwnerEscape(m.full_name || "Anggota")}</b>
+      <p>${dtiOwnerEscape(m.email)}</p>
+      <p>Status: ${m.approved ? "Disetujui" : "Menunggu persetujuan"}</p>
+      <p>Paket: ${dtiOwnerEscape(m.membership_tier || "free").toUpperCase()}</p>
+
+      ${!m.approved ? `
+        <button class="dti-action"
+          onclick="dtiOwnerApprove('${m.id}')">
+          Setujui
+        </button>` : ""}
+
+      <p>Aktifkan VIP:</p>
+      <button class="dti-action"
+        onclick="dtiOwnerVIP('${m.id}',15)">15 Hari</button>
+      <button class="dti-action"
+        onclick="dtiOwnerVIP('${m.id}',30)">30 Hari</button>
+      <button class="dti-action"
+        onclick="dtiOwnerVIP('${m.id}',365)">365 Hari</button>
+      <button class="dti-action"
+        onclick="dtiOwnerVIP('${m.id}',0)">Lifetime</button>
+
+      <button class="dti-secondary"
+        onclick="dtiOwnerBlock('${m.id}')">
+        Blokir Anggota
+      </button>
+    </div>
+  `).join("");
+}
+
+async function dtiOwnerApprove(id){
+  if(!confirm("Setujui anggota ini?")) return;
+
+  const {error} = await dtiSupabase.rpc(
+    "owner_approve_member",
+    {target_user:id}
+  );
+
+  dtiOwnerMessage(error ? error.message : "Anggota disetujui.");
+  dtiOwnerLoad();
+}
+
+async function dtiOwnerVIP(id,days){
+  const label = days === 0 ? "Lifetime" : days + " hari";
+
+  if(!confirm("Aktifkan VIP " + label + "?")) return;
+
+  const {data,error} = await dtiSupabase.rpc(
+    "owner_set_vip",
+    {target_user:id,vip_days:days}
+  );
+
+  if(error){
+    dtiOwnerMessage("Gagal: " + error.message);
+  }else{
+    dtiOwnerMessage(data ? "VIP berhasil diaktifkan!" :
+      "Anggota tidak ditemukan atau tidak dapat diubah.");
+  }
+
+  dtiOwnerLoad();
+}
+
+async function dtiOwnerBlock(id){
+  if(!confirm("Blokir anggota ini?")) return;
+
+  const {data,error} = await dtiSupabase.rpc(
+    "owner_block_member",
+    {target_user:id}
+  );
+
+  dtiOwnerMessage(error ? error.message :
+    (data ? "Anggota diblokir." : "Anggota tidak dapat diblokir."));
+
+  dtiOwnerLoad();
+}
+
+dtiOwnerInit();
+</script>
+
 </body>
 </html>
