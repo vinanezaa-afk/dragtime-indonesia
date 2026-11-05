@@ -157,14 +157,41 @@ nav span{display:block;font-size:19px;margin-bottom:4px}
  </div>
 </section>
 
+ 
 <section class="page" id="community">
- <h2>Community</h2>
- <div class="card">
-  <b>DTI Community</b>
-  <p class="muted">Ruang komunitas DragTime Indonesia.</p>
-  <p class="muted">Posting video, komentar, dan leaderboard online akan diaktifkan setelah login dan penyimpanan online dihubungkan.</p>
- </div>
+  <h2>DTI Community</h2>
+
+  <div class="card">
+    <h3>Buat Postingan</h3>
+    <textarea id="dti-post-content" placeholder="Apa yang ingin kamu bagikan?"></textarea>
+
+    <input
+      type="file"
+      id="dti-post-file"
+      accept="image/*,video/mp4,video/quicktime,video/webm"
+    >
+
+    <button onclick="dtiCommunityPost()">Posting</button>
+    <p id="dti-community-message" class="muted"></p>
+  </div>
+
+  <div class="card">
+    <h3>Menu Community</h3>
+    <div class="grid">
+      <button onclick="dtiCommunityLoad('all')">Beranda</button>
+      <button onclick="dtiCommunityLoad('following')">Following</button>
+      <button onclick="dtiCommunityLoad('saved')">Disimpan</button>
+      <button onclick="dtiCommunityLoad('reposts')">Repost</button>
+    </div>
+  </div>
+
+  <div id="dti-community-feed">
+    <div class="card">
+      <p class="muted">Postingan Community akan tampil di sini.</p>
+    </div>
+  </div>
 </section>
+
 
  <section class="page" id="profile">
   <h2>Profil Akun</h2>
@@ -806,6 +833,350 @@ async function dtiLogout() {
 }
 
 dtiLoadAccount();
+
+// ===================================
+// DRAGTIME INDONESIA - COMMUNITY
+// ===================================
+
+function dtiEscape(value) {
+  return String(value ?? "").replace(/[&<>"']/g, c => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[c]);
+}
+
+function dtiCommunityMessage(message) {
+  const el = document.getElementById("dti-community-message");
+  if (el) el.textContent = message;
+}
+
+async function dtiCommunityPost() {
+  try {
+    const { data: { user } } = await dtiSupabase.auth.getUser();
+    if (!user) return dtiCommunityMessage("Silakan login dahulu.");
+
+    const content = document.getElementById("dti-post-content").value.trim();
+    const file = document.getElementById("dti-post-file").files[0];
+
+    if (!content && !file) {
+      return dtiCommunityMessage("Isi tulisan atau pilih foto/video.");
+    }
+
+    let media_path = null;
+    let media_type = null;
+
+    if (file) {
+      if (file.size > 50 * 1024 * 1024) {
+        return dtiCommunityMessage("Ukuran file maksimal 50 MB.");
+      }
+
+      const allowed = [
+        "image/jpeg", "image/png", "image/webp", "image/gif",
+        "video/mp4", "video/quicktime", "video/webm"
+      ];
+
+      if (!allowed.includes(file.type)) {
+        return dtiCommunityMessage("Format foto/video tidak didukung.");
+      }
+
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const path = user.id + "/" + Date.now() + "_" + safeName;
+
+      const { error: uploadError } = await dtiSupabase.storage
+        .from("community-videos")
+        .upload(path, file);
+
+      if (uploadError) throw uploadError;
+
+      media_path = path;
+      media_type = file.type.startsWith("video/") ? "video" : "image";
+    }
+
+    const { error } = await dtiSupabase
+      .from("community_posts")
+      .insert({
+        user_id: user.id,
+        content,
+        media_path,
+        media_type
+      });
+
+    if (error) throw error;
+
+    document.getElementById("dti-post-content").value = "";
+    document.getElementById("dti-post-file").value = "";
+
+    dtiCommunityMessage("Posting berhasil!");
+    await dtiCommunityLoad("all");
+
+  } catch (error) {
+    console.error(error);
+    dtiCommunityMessage("Gagal posting: " + error.message);
+  }
+}
+
+async function dtiCommunityLoad(mode = "all") {
+  const feed = document.getElementById("dti-community-feed");
+  if (!feed) return;
+
+  feed.innerHTML = "<div class='card'>Memuat Community...</div>";
+
+  try {
+    const { data: { user } } = await dtiSupabase.auth.getUser();
+    if (!user) {
+      feed.innerHTML = "<div class='card'>Silakan login untuk membuka Community.</div>";
+      return;
+    }
+
+    let query = dtiSupabase
+      .from("community_posts")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    const { data: posts, error } = await query;
+    if (error) throw error;
+
+    const [likesRes, commentsRes, followsRes, savedRes, repostsRes] =
+      await Promise.all([
+        dtiSupabase.from("community_likes").select("*"),
+        dtiSupabase.from("community_comments").select("*"),
+        dtiSupabase.from("community_follows").select("*")
+          .eq("follower_id", user.id),
+        dtiSupabase.from("community_saved_posts").select("*")
+          .eq("user_id", user.id),
+        dtiSupabase.from("community_reposts").select("*")
+          .eq("user_id", user.id)
+      ]);
+
+    for (const result of [likesRes, commentsRes, followsRes, savedRes, repostsRes]) {
+      if (result.error) throw result.error;
+    }
+
+    const likes = likesRes.data || [];
+    const comments = commentsRes.data || [];
+    const follows = followsRes.data || [];
+    const saved = savedRes.data || [];
+    const reposts = repostsRes.data || [];
+
+    let list = posts || [];
+
+    if (mode === "following") {
+      const ids = follows.map(x => x.following_id);
+      list = list.filter(p => ids.includes(p.user_id));
+    }
+
+    if (mode === "saved") {
+      const ids = saved.map(x => x.post_id);
+      list = list.filter(p => ids.includes(p.id));
+    }
+
+    if (mode === "reposts") {
+      const ids = reposts.map(x => x.post_id);
+      list = list.filter(p => ids.includes(p.id));
+    }
+
+    if (!list.length) {
+      feed.innerHTML = "<div class='card'>Belum ada postingan di sini.</div>";
+      return;
+    }
+
+    let html = "";
+
+    for (const post of list) {
+      const postLikes = likes.filter(x => x.post_id === post.id);
+      const postComments = comments.filter(x => x.post_id === post.id);
+      const isLiked = postLikes.some(x => x.user_id === user.id);
+      const isSaved = saved.some(x => x.post_id === post.id);
+      const isReposted = reposts.some(x => x.post_id === post.id);
+      const isFollowing = follows.some(x => x.following_id === post.user_id);
+
+      let media = "";
+
+      if (post.media_path) {
+        const { data, error } = await dtiSupabase.storage
+          .from("community-videos")
+          .createSignedUrl(post.media_path, 3600);
+
+        if (!error && data?.signedUrl) {
+          const url = dtiEscape(data.signedUrl);
+
+          media = post.media_type === "video"
+            ? `<video src="${url}" controls playsinline style="width:100%;max-height:360px;border-radius:12px"></video>`
+            : `<img src="${url}" style="width:100%;border-radius:12px">`;
+        }
+      }
+
+      const author = post.user_id === user.id
+        ? "Kamu"
+        : "Anggota " + post.user_id.slice(0, 6);
+
+      html += `
+        <div class="card" style="margin-top:12px">
+          <b>${author}</b>
+          ${post.user_id !== user.id ? `
+            <button onclick="dtiCommunityFollow('${post.user_id}')">
+              ${isFollowing ? "Unfollow" : "Follow"}
+            </button>` : ""}
+          <p>${dtiEscape(post.content)}</p>
+          ${media}
+          <p class="muted">${new Date(post.created_at).toLocaleString("id-ID")}</p>
+
+          <div class="grid">
+            <button onclick="dtiCommunityLike('${post.id}')">
+              ${isLiked ? "♥" : "♡"} Like (${postLikes.length})
+            </button>
+            <button onclick="dtiCommunitySave('${post.id}')">
+              ${isSaved ? "Tersimpan" : "Simpan"}
+            </button>
+            <button onclick="dtiCommunityRepost('${post.id}')">
+              ${isReposted ? "Batal Repost" : "Repost"}
+            </button>
+          </div>
+
+          <h4>Komentar (${postComments.length})</h4>
+          ${postComments.map(c => `
+            <p><b>Anggota ${c.user_id.slice(0, 6)}:</b>
+            ${dtiEscape(c.content)}</p>
+          `).join("")}
+
+          <input id="dti-comment-${post.id}" placeholder="Tulis komentar...">
+          <button onclick="dtiCommunityComment('${post.id}')">Kirim</button>
+        </div>
+      `;
+    }
+
+    feed.innerHTML = html;
+
+  } catch (error) {
+    console.error(error);
+    feed.innerHTML = "<div class='card'>Gagal memuat Community: " +
+      dtiEscape(error.message) + "</div>";
+  }
+}
+
+async function dtiCommunityLike(postId) {
+  try {
+    const { data: { user } } = await dtiSupabase.auth.getUser();
+    if (!user) throw new Error("Silakan login.");
+
+    const { data } = await dtiSupabase
+      .from("community_likes")
+      .select("*")
+      .eq("post_id", postId)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    const result = data
+      ? await dtiSupabase.from("community_likes")
+          .delete().eq("post_id", postId).eq("user_id", user.id)
+      : await dtiSupabase.from("community_likes")
+          .insert({ post_id: postId, user_id: user.id });
+
+    if (result.error) throw result.error;
+    await dtiCommunityLoad("all");
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function dtiCommunityComment(postId) {
+  try {
+    const { data: { user } } = await dtiSupabase.auth.getUser();
+    if (!user) throw new Error("Silakan login.");
+
+    const input = document.getElementById("dti-comment-" + postId);
+    const content = input.value.trim();
+    if (!content) return;
+
+    const { error } = await dtiSupabase
+      .from("community_comments")
+      .insert({ post_id: postId, user_id: user.id, content });
+
+    if (error) throw error;
+    await dtiCommunityLoad("all");
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function dtiCommunityFollow(targetId) {
+  try {
+    const { data: { user } } = await dtiSupabase.auth.getUser();
+    if (!user) throw new Error("Silakan login.");
+    if (user.id === targetId) return;
+
+    const { data } = await dtiSupabase
+      .from("community_follows")
+      .select("*")
+      .eq("follower_id", user.id)
+      .eq("following_id", targetId)
+      .maybeSingle();
+
+    const result = data
+      ? await dtiSupabase.from("community_follows")
+          .delete().eq("follower_id", user.id).eq("following_id", targetId)
+      : await dtiSupabase.from("community_follows")
+          .insert({ follower_id: user.id, following_id: targetId });
+
+    if (result.error) throw result.error;
+    await dtiCommunityLoad("all");
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function dtiCommunitySave(postId) {
+  try {
+    const { data: { user } } = await dtiSupabase.auth.getUser();
+    if (!user) throw new Error("Silakan login.");
+
+    const { data } = await dtiSupabase
+      .from("community_saved_posts")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("post_id", postId)
+      .maybeSingle();
+
+    const result = data
+      ? await dtiSupabase.from("community_saved_posts")
+          .delete().eq("user_id", user.id).eq("post_id", postId)
+      : await dtiSupabase.from("community_saved_posts")
+          .insert({ user_id: user.id, post_id: postId });
+
+    if (result.error) throw result.error;
+    await dtiCommunityLoad("all");
+  } catch (error) {
+    alert(error.message);
+  }
+}
+
+async function dtiCommunityRepost(postId) {
+  try {
+    const { data: { user } } = await dtiSupabase.auth.getUser();
+    if (!user) throw new Error("Silakan login.");
+
+    const { data } = await dtiSupabase
+      .from("community_reposts")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("post_id", postId)
+      .maybeSingle();
+
+    const result = data
+      ? await dtiSupabase.from("community_reposts")
+          .delete().eq("user_id", user.id).eq("post_id", postId)
+      : await dtiSupabase.from("community_reposts")
+          .insert({ user_id: user.id, post_id: postId });
+
+    if (result.error) throw result.error;
+    await dtiCommunityLoad("all");
+  } catch (error) {
+    alert(error.message);
+  }
+}
 
 </script>
 </body>
