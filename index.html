@@ -166,12 +166,26 @@ nav span{display:block;font-size:19px;margin-bottom:4px}
  </div>
 </section>
 
-<section class="page" id="profile">
- <h2>Profil</h2>
- <div class="card">
-  <b>Pengguna DTI</b>
-  <p class="muted">Profil lokal perangkat ini.</p>
- </div>
+ <section class="page" id="profile">
+  <h2>Profil Akun</h2>
+
+  <div class="card">
+    <h3 id="profileName">Memuat profil...</h3>
+    <p class="muted" id="profileEmail">-</p>
+    <p id="profileRole">-</p>
+
+    <div style="background:#202632;padding:15px;border-radius:12px">
+      <b id="profileTier">MEMUAT STATUS...</b>
+      <p class="muted" id="profileExpiry">Memeriksa masa aktif...</p>
+    </div>
+
+    <button class="full secondary" onclick="dtiLoadAccount()">
+      REFRESH PROFIL
+    </button>
+    <button class="full" onclick="dtiLogout()">
+      KELUAR AKUN
+    </button>
+  </div>
 </section>
 
 <section class="page" id="settings">
@@ -718,6 +732,79 @@ async function dtiOwnerBlock(id){
 
 dtiOwnerInit();
 </script>
+ let dtiCurrentUser = null;
+let dtiCurrentProfile = null;
 
+async function dtiLoadAccount() {
+  const {data:{session}, error:sessionError} =
+    await dtiSupabase.auth.getSession();
+
+  if (sessionError || !session) return;
+
+  dtiCurrentUser = session.user;
+
+  const {data:profile,error} = await dtiSupabase
+    .from("profiles")
+    .select("id,email,full_name,role,approved,membership_tier,vip_expires_at")
+    .eq("id",session.user.id)
+    .maybeSingle();
+
+  if(error || !profile) {
+    console.error("Gagal membaca profil:",error);
+    return;
+  }
+
+  dtiCurrentProfile = profile;
+
+  const isOwner = profile.role === "owner";
+  const isVIP = profile.membership_tier === "vip" &&
+    (!profile.vip_expires_at ||
+    new Date(profile.vip_expires_at).getTime() > Date.now());
+
+  document.getElementById("profileName").textContent =
+    profile.full_name || "Pengguna DTI";
+
+  document.getElementById("profileEmail").textContent =
+    profile.email || session.user.email;
+
+  document.getElementById("profileRole").textContent =
+    isOwner ? "OWNER DTI" : "MEMBER DTI";
+
+  document.getElementById("profileTier").textContent =
+    isOwner ? "OWNER ACCESS" : isVIP ? "DTI VIP" : "DTI FREE";
+
+  document.getElementById("profileExpiry").textContent =
+    isOwner ? "Akses Owner" :
+    !isVIP ? "Paket Free" :
+    !profile.vip_expires_at ? "Lifetime" :
+    "Berakhir: " + new Date(
+      profile.vip_expires_at
+    ).toLocaleString("id-ID");
+}
+
+function dtiHasVIP() {
+  if (!dtiCurrentProfile) return false;
+
+  if (dtiCurrentProfile.role === "owner") return true;
+
+  return dtiCurrentProfile.membership_tier === "vip" &&
+    (!dtiCurrentProfile.vip_expires_at ||
+    new Date(dtiCurrentProfile.vip_expires_at).getTime() > Date.now());
+}
+
+async function dtiLogout() {
+  if (!confirm("Yakin ingin keluar dari akun?")) return;
+
+  const {error} = await dtiSupabase.auth.signOut();
+
+  if(error) {
+    alert(error.message);
+    return;
+  }
+
+  location.reload();
+}
+
+dtiLoadAccount();
 </body>
 </html>
