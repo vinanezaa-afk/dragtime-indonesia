@@ -191,8 +191,7 @@ nav span{display:block;font-size:19px;margin-bottom:4px}
     </div>
   </div>
 </section>
-
-
+ <button onclick="showPage('reels')">DTI Reels</button>
  <section class="page" id="profile">
   <h2>Profil Akun</h2>
 
@@ -247,7 +246,8 @@ function showPage(id){
  if(id==='history') renderHistory();
  if(id==='statistics') renderStats();
  if(id==='garage') renderBikes();
-}
+ if(id==='reels') dtiLoadReels();
+} 
 
 function getLocation(){
  if(!navigator.geolocation){alert('Browser tidak mendukung GPS');return}
@@ -590,7 +590,39 @@ dtiCheckLogin();
   border-radius:8px;
   padding:9px;
   margin:4px 3px;
+}/* DTI REELS */
+#reels {
+  background: #080a0f;
+  color: white;
 }
+
+#dti-reels-feed {
+  height: calc(100dvh - 150px);
+  min-height: 450px;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  scrollbar-width: none;
+}
+
+#dti-reels-feed::-webkit-scrollbar {
+  display: none;
+}
+
+.dti-reels-video {
+  position: relative;
+  height: 100%;
+  min-height: 450px;
+  background: #111;
+  overflow: hidden;
+  scroll-snap-align: start;
+}
+
+.dti-reels-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+ 
 </style>
 
  
@@ -1254,7 +1286,63 @@ window.dtiCommunityComment = dtiCommunityComment;
 window.dtiCommunityFollow = dtiCommunityFollow;
 window.dtiCommunitySave = dtiCommunitySave;
 window.dtiCommunityRepost = dtiCommunityRepost;
+ async function dtiLoadReels() {
+  const feed = document.getElementById("dti-reels-feed");
 
+  feed.innerHTML = '<p>Memuat video...</p>';
+
+  const { data, error } = await dtiSupabase
+    .from("community_posts")
+    .select("*")
+    .eq("media_type", "video")
+    .not("media_path", "is", null)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    feed.innerHTML = "<p>Gagal memuat video: " + dtiEscape(error.message) + "</p>";
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    feed.innerHTML = "<p>Belum ada video di DTI Reels.</p>";
+    return;
+  }
+
+  feed.innerHTML = "";
+
+  for (const post of data) {
+    const { data: file } = await dtiSupabase.storage
+      .from("community-videos")
+      .createSignedUrl(post.media_path, 3600);
+
+    if (!file?.signedUrl) continue;
+
+    const item = document.createElement("div");
+    item.className = "dti-reels-video";
+
+    const video = document.createElement("video");
+    video.src = file.signedUrl;
+    video.autoplay = true;
+    video.loop = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.controls = true;
+
+    item.appendChild(video);
+    feed.appendChild(item);
+  }
+}
+
+window.dtiLoadReels = dtiLoadReels;
 </script>
+ <section class="page" id="reels">
+  <h2>DTI Reels</h2>
+
+  <div id="dti-reels-feed">
+    <div class="card">
+      <p class="muted">Memuat video DTI Reels...</p>
+    </div>
+  </div>
+</section>
 </body>
 </html>
