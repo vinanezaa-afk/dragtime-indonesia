@@ -593,6 +593,74 @@ dtiCheckLogin();
 }
 </style>
 
+ 
+/* DTI REELS */
+#dti-reels {
+  background: #080a0f;
+  color: white;
+  min-height: 100vh;
+}
+
+.dti-reels-video {
+  position: relative;
+  height: calc(100dvh - 80px);
+  min-height: 500px;
+  background: #111;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.dti-reels-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dti-reels-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 16px;
+  background: linear-gradient(
+    transparent 45%,
+    rgba(0,0,0,.75)
+  );
+  pointer-events: none;
+}
+
+.dti-reels-info {
+  padding-right: 65px;
+}
+
+.dti-reels-actions {
+  position: absolute;
+  right: 12px;
+  bottom: 90px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.dti-reels-actions button {
+  background: transparent;
+  border: 0;
+  color: white;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.dti-reels-actions button span {
+  display: block;
+  font-size: 11px;
+}
+
+.dti-reels-video button,
+.dti-reels-video input {
+  pointer-events: auto;
+}
+
 <button id="dti-owner-button"
  onclick="dtiOwnerOpen()">OWNER DASHBOARD</button>
 
